@@ -1,0 +1,17 @@
+Mosquitto Manager is a simple addon to mosquitto which allows you to manage mosquitto pskfile via json over HTTP API.
+All credentials are stored as Kubernetes Custom Resources, so if you do not need to worry about db, ldap or other
+external distributed storage in your K8s cluster.
+
+The code is in pre-alpha version please do not use it in production.
+
+Command line options:
+flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+flag.Int("mosquittoPid", 1, "pid of mosquitto process")
+flag.String("pskFilePath", "/etc/pskfile", "path to pskfile")
+flag.String("basicAuthLogin", "", "basic auth login")
+flag.String("basicAuthPass", "", "basic auth password")
+
+if basic auth is not set endpoints are not secured.
+
+More details will be added in the future.
+

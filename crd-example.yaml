@@ -1,0 +1,8 @@
+apiVersion: "tegess.com/v1alpha1"
+kind: "MosquittoCred"
+metadata:
+  name: "mosquitto-cred-example"
+spec:
+  login: "login1"
+  password: "password1"
+
