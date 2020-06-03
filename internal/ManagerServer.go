@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"github.com/mitchellh/go-ps"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type LoginPassword struct {
@@ -26,16 +28,38 @@ func NewManagerService() ManagerService {
 	var basicAuthLogin *string
 	var basicAuthPass *string
 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	mosquittoPid = flag.Int("mosquittoPid", 1, "pid of mosquitto process")
-	pskFilePath = flag.String("pskFilePath", "/etc/pskfile", "path to pskfile")
+	mosquittoPid = flag.Int("mosquittoPid", 0, "pid of mosquitto process")
+	pskFilePath = flag.String("pskFilePath", "", "path to pskfile")
 	basicAuthLogin = flag.String("basicAuthLogin", "", "basic auth login")
 	basicAuthPass = flag.String("basicAuthPass", "", "basic auth password")
+	if *mosquittoPid == 0 {
+		mosquittoPid = tryFindMosquittoPidByName()
+	}
+	if *pskFilePath == "" {
+		*pskFilePath = "/proc/" + strconv.Itoa(*mosquittoPid) + "/root/etc/mosquitto/pskfile"
+	}
+	log.Printf("Mosquitto pid - " + strconv.Itoa(*mosquittoPid))
+	log.Printf("Pskfile path - " + *pskFilePath)
 	flag.Parse()
 	var client = NewClientManager(kubeconfig)
 	var config = NewConfig(*mosquittoPid, *pskFilePath, *basicAuthLogin, *basicAuthPass)
 	service.config = config
 	service.client = client
 	return service
+}
+
+func tryFindMosquittoPidByName() *int {
+	p, err := ps.Processes()
+	if err != nil {
+		log.Fatal(err)
+	}
+	pid := 0
+	for _, process := range p {
+		if process.Executable() == "mosquitto" {
+			pid = process.Pid()
+		}
+	}
+	return &pid
 }
 
 func (service *ManagerService) checkAuth(w http.ResponseWriter, r *http.Request) error {
