@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"github.com/mitchellh/go-ps"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"net/http"
 	"strconv"
@@ -97,11 +98,11 @@ func (service *ManagerService) add(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Adding Login=" + lp.Login + " Password=" + lp.Password)
 		err = service.client.createMosquittoCred(lp)
 		if err != nil {
+			log.Printf("Error during adding")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		log.Printf("Added Login=" + lp.Login + " Password=" + lp.Password)
-		service.reloadAfterChange()
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -117,6 +118,7 @@ func (service *ManagerService) remove(w http.ResponseWriter, r *http.Request) {
 		var login Login
 		err = json.NewDecoder(r.Body).Decode(&login)
 		if err != nil {
+			log.Printf("Error during removing")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -126,7 +128,6 @@ func (service *ManagerService) remove(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		service.reloadAfterChange()
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -170,6 +171,8 @@ func StartServer() {
 	mux.HandleFunc("/remove", service.remove)
 	mux.HandleFunc("/list", service.list)
 
+	go watchAndSyncCredsWithPskFile(&service)
+
 	if service.config.isTLS() {
 		log.Printf("Starting mosquitto-manager TLS server on port " + service.config.port)
 		err := http.ListenAndServeTLS(service.config.port, service.config.crt, service.config.key, mux)
@@ -178,6 +181,18 @@ func StartServer() {
 		log.Printf("Starting mosquitto-manager server on port " + service.config.port)
 		err := http.ListenAndServe(service.config.port, mux)
 		log.Fatal(err)
+	}
+
+}
+
+func watchAndSyncCredsWithPskFile(service *ManagerService) {
+	watch, err := service.client.client.MosquittoCreds("default").Watch(v1.ListOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	for range watch.ResultChan() {
+		log.Printf("Received event from K8s watcher")
+		service.reloadAfterChange()
 	}
 
 }

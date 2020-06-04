@@ -1,6 +1,5 @@
 package v1alpha1
 
-
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -31,9 +30,9 @@ func NewForConfig(c *rest.Config) (*ExampleV1Alpha1Client, error) {
 	return &ExampleV1Alpha1Client{restClient: client}, nil
 }
 
-func (c *ExampleV1Alpha1Client) MosquittoCreds(namespace string) *mosquittoCredClient {
+func (c *ExampleV1Alpha1Client) MosquittoCreds(namespace string) MosquittoCredInterface {
 	return &mosquittoCredClient{
 		restClient: c.restClient,
-		ns: namespace,
+		ns:         namespace,
 	}
 }

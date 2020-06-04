@@ -2,11 +2,16 @@ package internal
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	v1alpha12 "mosquitto-manager/internal/api/types/v1alpha1"
 	"mosquitto-manager/internal/clientset/v1alpha1"
+	"time"
 )
 
 type ClientManager struct {
@@ -69,4 +74,21 @@ func (client *ClientManager) createMosquittoCred(lp LoginPassword) error {
 	}
 	_, err := client.client.MosquittoCreds("default").Create(&creds)
 	return err
+}
+
+func watchMosquittoCreds(clientSet v1alpha1.ExampleV1Alpha1Interface) cache.Store {
+	projectStore, projectController := cache.NewInformer(
+		&cache.ListWatch{
+			ListFunc: func(lo metav1.ListOptions) (result runtime.Object, err error) {
+				return clientSet.MosquittoCreds("default").List(lo)
+			},
+			WatchFunc: func(lo metav1.ListOptions) (watch.Interface, error) {
+				return clientSet.MosquittoCreds("default").Watch(lo)
+			},
+		},
+		&v1alpha12.MosquittoCred{},
+		1*time.Minute,
+		cache.ResourceEventHandlerFuncs{})
+	go projectController.Run(wait.NeverStop)
+	return projectStore
 }
