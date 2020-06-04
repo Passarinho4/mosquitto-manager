@@ -15,6 +15,10 @@ type LoginPassword struct {
 	Password string
 }
 
+type Login struct {
+	Login string
+}
+
 type ManagerService struct {
 	client *ClientManager
 	config Config
@@ -27,11 +31,18 @@ func NewManagerService() ManagerService {
 	var pskFilePath *string
 	var basicAuthLogin *string
 	var basicAuthPass *string
+	var port *string
+	var crt *string
+	var key *string
 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	mosquittoPid = flag.Int("mosquittoPid", 0, "pid of mosquitto process")
 	pskFilePath = flag.String("pskFilePath", "", "path to pskfile")
 	basicAuthLogin = flag.String("basicAuthLogin", "", "basic auth login")
 	basicAuthPass = flag.String("basicAuthPass", "", "basic auth password")
+	port = flag.String("port", "8080", "port for mosquitto manager api")
+	crt = flag.String("crt", "", "TLS crt path if empty http")
+	key = flag.String("key", "", "TLS key path if empty http")
+
 	if *mosquittoPid == 0 {
 		mosquittoPid = tryFindMosquittoPidByName()
 	}
@@ -42,7 +53,7 @@ func NewManagerService() ManagerService {
 	log.Printf("Pskfile path - " + *pskFilePath)
 	flag.Parse()
 	var client = NewClientManager(kubeconfig)
-	var config = NewConfig(*mosquittoPid, *pskFilePath, *basicAuthLogin, *basicAuthPass)
+	var config = NewConfig(*mosquittoPid, *pskFilePath, *basicAuthLogin, *basicAuthPass, *port, *crt, *key)
 	service.config = config
 	service.client = client
 	return service
@@ -103,14 +114,18 @@ func (service *ManagerService) remove(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		var lp LoginPassword
-		err = json.NewDecoder(r.Body).Decode(&lp)
+		var login Login
+		err = json.NewDecoder(r.Body).Decode(&login)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		log.Printf("Removing Login=" + lp.Login + " Password=" + lp.Password)
-		removeCRD(lp)
+		log.Printf("Removing Login=" + login.Login)
+		err = service.client.removeCRD(login)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		service.reloadAfterChange()
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -155,8 +170,14 @@ func StartServer() {
 	mux.HandleFunc("/remove", service.remove)
 	mux.HandleFunc("/list", service.list)
 
-	log.Printf("Starting mosquitto-manager server...")
+	if service.config.isTLS() {
+		log.Printf("Starting mosquitto-manager TLS server on port " + service.config.port)
+		err := http.ListenAndServeTLS(service.config.port, service.config.crt, service.config.key, mux)
+		log.Fatal(err)
+	} else {
+		log.Printf("Starting mosquitto-manager server on port " + service.config.port)
+		err := http.ListenAndServe(service.config.port, mux)
+		log.Fatal(err)
+	}
 
-	err := http.ListenAndServe(":8080", mux)
-	log.Fatal(err)
 }

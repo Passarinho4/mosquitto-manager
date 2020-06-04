@@ -24,8 +24,9 @@ func NewClientManager(kubeconfig *string) *ClientManager {
 	return &result
 }
 
-func removeCRD(lp LoginPassword) {
-
+func (client *ClientManager) removeCRD(login Login) error {
+	err := client.client.MosquittoCreds("default").Delete(login.Login, metav1.DeleteOptions{})
+	return err
 }
 
 func createConfig(kubeconfig *string) *rest.Config {
@@ -55,15 +56,15 @@ func (client *ClientManager) getMosquittoCreds() []LoginPassword {
 
 func (client *ClientManager) createMosquittoCred(lp LoginPassword) error {
 	creds := v1alpha12.MosquittoCred{
-	TypeMeta:metav1.TypeMeta{
-		Kind: "MosquittoCred",
-	},
-	ObjectMeta:metav1.ObjectMeta{
-		Name: lp.Login,
-	},
-	Spec:v1alpha12.MosquittoCredSpec{
-		Login: lp.Login,
-		Password: lp.Password,
+		TypeMeta: metav1.TypeMeta{
+			Kind: "MosquittoCred",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: lp.Login,
+		},
+		Spec: v1alpha12.MosquittoCredSpec{
+			Login:    lp.Login,
+			Password: lp.Password,
 		},
 	}
 	_, err := client.client.MosquittoCreds("default").Create(&creds)
