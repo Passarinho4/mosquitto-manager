@@ -1,0 +1,11 @@
+apiVersion: "tegess.com/v1alpha1"
+kind: "MosquittoCred"
+metadata:
+  name: "mosquitto-cred-example"
+spec:
+  login: "szymek"
+  password: "szymek"
+  acls:
+    - aclType: "topic"
+      accessType: "readwrite"
+      topic: "#"

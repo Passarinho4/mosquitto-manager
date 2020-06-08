@@ -21,3 +21,15 @@ spec:
                type: "string"
              password:
                type: "string"
+             acls:
+               type: "array"
+               items:
+                 type: "object"
+                 required: ["aclType", "accessType", "topic"]
+                 properties:
+                   alcType:
+                     type: "string"
+                   accessType:
+                     type: "string"
+                   topic:
+                     type: "string"

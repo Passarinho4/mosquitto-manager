@@ -9,6 +9,18 @@ func (in *MosquittoCred) DeepCopyInto(out *MosquittoCred) {
 		Login:    in.Spec.Login,
 		Password: in.Spec.Password,
 	}
+	if in.Spec.Acls != nil {
+		out.Spec.Acls = make([]Acl, len(in.Spec.Acls))
+		for i := range in.Spec.Acls {
+			in.Spec.Acls[i].DeepCopyInto(&out.Spec.Acls[i])
+		}
+	}
+}
+
+func (in *Acl) DeepCopyInto(out *Acl) {
+	out.AccessType = in.AccessType
+	out.AclType = in.AclType
+	out.Topic = in.Topic
 }
 
 func (in *MosquittoCred) DeepCopyObject() runtime.Object {

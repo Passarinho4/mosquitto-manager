@@ -9,6 +9,7 @@ type Config struct {
 	port            string
 	crt             string
 	key             string
+	aclFile         string
 }
 
 func NewConfig(mosquittoPid int, pskFilePath string,
@@ -16,7 +17,8 @@ func NewConfig(mosquittoPid int, pskFilePath string,
 	basicAuthPass string,
 	port string,
 	crt string,
-	key string) Config {
+	key string,
+	aclFile string) Config {
 	if basicAuthLogin != "" && basicAuthPass != "" {
 		return Config{
 			mosquittoPid:    mosquittoPid,
@@ -25,6 +27,7 @@ func NewConfig(mosquittoPid int, pskFilePath string,
 			port:            ":" + port,
 			crt:             crt,
 			key:             key,
+			aclFile:         aclFile,
 		}
 	} else {
 		return Config{
@@ -34,6 +37,7 @@ func NewConfig(mosquittoPid int, pskFilePath string,
 			port:            ":" + port,
 			crt:             crt,
 			key:             key,
+			aclFile:         aclFile,
 		}
 	}
 }

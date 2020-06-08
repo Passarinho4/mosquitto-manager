@@ -50,16 +50,20 @@ func createConfig(kubeconfig *string) *rest.Config {
 	}
 }
 
-func (client *ClientManager) getMosquittoCreds() []LoginPassword {
-	pods, _ := client.client.MosquittoCreds("default").List(metav1.ListOptions{})
-	var result []LoginPassword
-	for _, item := range pods.Items {
-		result = append(result, LoginPassword{Login: item.Spec.Login, Password: item.Spec.Password})
+func (client *ClientManager) getMosquittoCreds() []LoginPasswordAcls {
+	creds, _ := client.client.MosquittoCreds("default").List(metav1.ListOptions{})
+	var result []LoginPasswordAcls
+	for _, item := range creds.Items {
+		result = append(result, LoginPasswordAcls{
+			Login:    item.Spec.Login,
+			Password: item.Spec.Password,
+			Acls:     item.Spec.Acls,
+		})
 	}
 	return result
 }
 
-func (client *ClientManager) createMosquittoCred(lp LoginPassword) error {
+func (client *ClientManager) createMosquittoCred(lp LoginPasswordAcls) error {
 	creds := v1alpha12.MosquittoCred{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "MosquittoCred",
@@ -70,6 +74,7 @@ func (client *ClientManager) createMosquittoCred(lp LoginPassword) error {
 		Spec: v1alpha12.MosquittoCredSpec{
 			Login:    lp.Login,
 			Password: lp.Password,
+			Acls:     lp.Acls,
 		},
 	}
 	_, err := client.client.MosquittoCreds("default").Create(&creds)

@@ -11,6 +11,7 @@ spec:
     - name: mosquitto-manager
       image: passarinho/mosquitto-manager
       imagePullPolicy: Always
+      args: ["-acl=true"]
       securityContext:
         capabilities:
           add:

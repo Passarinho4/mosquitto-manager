@@ -19,7 +19,7 @@ func reloadConfig(config *Config) {
 	}
 }
 
-func prepareConfigFile(client *ClientManager, config *Config) error {
+func preparePskFile(client *ClientManager, config *Config) error {
 	creds := client.getMosquittoCreds()
 	pskfile, err := os.OpenFile(config.pskFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
@@ -36,5 +36,37 @@ func prepareConfigFile(client *ClientManager, config *Config) error {
 		}
 	}
 
+	return w.Flush()
+}
+
+func prepareAclFile(client *ClientManager, config *Config) error {
+	creds := client.getMosquittoCreds()
+	aclfile, err := os.OpenFile(config.aclFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer aclfile.Close()
+	w := bufio.NewWriter(aclfile)
+
+	for _, cred := range creds {
+		if cred.Acls == nil {
+			break
+		}
+		_, err = w.WriteString("user " + cred.Login + "\n")
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, acl := range cred.Acls {
+			_, err = w.WriteString(acl.AclType + " " + acl.AccessType + " " + acl.Topic + "\n")
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		_, err = w.WriteString("\n")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	return w.Flush()
 }

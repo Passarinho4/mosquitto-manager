@@ -7,13 +7,15 @@ import (
 	"github.com/mitchellh/go-ps"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
+	"mosquitto-manager/internal/api/types/v1alpha1"
 	"net/http"
 	"strconv"
 )
 
-type LoginPassword struct {
+type LoginPasswordAcls struct {
 	Login    string
 	Password string
+	Acls     []v1alpha1.Acl
 }
 
 type Login struct {
@@ -35,6 +37,8 @@ func NewManagerService() ManagerService {
 	var port *string
 	var crt *string
 	var key *string
+	var acl *bool
+	var aclFile *string
 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	mosquittoPid = flag.Int("mosquittoPid", 0, "pid of mosquitto process")
 	pskFilePath = flag.String("pskFilePath", "", "path to pskfile")
@@ -43,6 +47,11 @@ func NewManagerService() ManagerService {
 	port = flag.String("port", "8080", "port for mosquitto manager api")
 	crt = flag.String("crt", "", "TLS crt path if empty http")
 	key = flag.String("key", "", "TLS key path if empty http")
+	acl = flag.Bool("acl", false, "If true the acls are created and managed")
+	aclFile = flag.String("aclFile", "", "Path to mosquitto acl file if empty and acl=true, the default path is used")
+	flag.Parse()
+
+	log.Printf("ACL is set to " + strconv.FormatBool(*acl))
 
 	if *mosquittoPid == 0 {
 		mosquittoPid = tryFindMosquittoPidByName()
@@ -50,11 +59,14 @@ func NewManagerService() ManagerService {
 	if *pskFilePath == "" {
 		*pskFilePath = "/proc/" + strconv.Itoa(*mosquittoPid) + "/root/etc/mosquitto/pskfile"
 	}
+	if *acl && *aclFile == "" {
+		*aclFile = "/proc/" + strconv.Itoa(*mosquittoPid) + "/root/etc/mosquitto/acl.conf"
+	}
+
 	log.Printf("Mosquitto pid - " + strconv.Itoa(*mosquittoPid))
 	log.Printf("Pskfile path - " + *pskFilePath)
-	flag.Parse()
 	var client = NewClientManager(kubeconfig)
-	var config = NewConfig(*mosquittoPid, *pskFilePath, *basicAuthLogin, *basicAuthPass, *port, *crt, *key)
+	var config = NewConfig(*mosquittoPid, *pskFilePath, *basicAuthLogin, *basicAuthPass, *port, *crt, *key, *aclFile)
 	service.config = config
 	service.client = client
 	return service
@@ -89,7 +101,7 @@ func (service *ManagerService) add(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		var lp LoginPassword
+		var lp LoginPasswordAcls
 		err = json.NewDecoder(r.Body).Decode(&lp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -155,11 +167,22 @@ func (service *ManagerService) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (service *ManagerService) reloadAfterChange() {
-	err := prepareConfigFile(service.client, &service.config)
+	log.Printf("Trying to prepare PSK file")
+	err := preparePskFile(service.client, &service.config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("PSK file prepared. Trying to reload mosquitto.")
+	log.Printf("PSK file prepared")
+	if service.config.aclFile != "" {
+		log.Printf("Trying to prepare ACL file")
+		err = prepareAclFile(service.client, &service.config)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("ACL file prepared")
+	} else {
+		log.Printf("Ignoring ACLs because ACL file path not set")
+	}
 	reloadConfig(&service.config)
 	log.Printf("Mosquitto config reloaded.")
 }

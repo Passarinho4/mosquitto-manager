@@ -6,5 +6,6 @@ RUN \
 
 COPY mosquitto.conf /etc/mosquitto/mosquitto.conf
 COPY pskfile /etc/mosquitto/pskfile
+COPY acl.conf /etc/mosquitto/acl.conf
 EXPOSE 8883
 ENTRYPOINT ["/usr/sbin/mosquitto","-c", "/etc/mosquitto/mosquitto.conf"]
