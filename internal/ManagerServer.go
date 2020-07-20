@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"github.com/mitchellh/go-ps"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"mosquitto-manager/internal/api/types/v1alpha1"
 	"net/http"
@@ -23,13 +22,16 @@ type Login struct {
 }
 
 type ManagerService struct {
-	client *ClientManager
-	config Config
+	manager Manager
+	config  Config
 }
 
 func NewManagerService() ManagerService {
 	var service = ManagerService{}
 	var kubeconfig *string
+	var mongoUri *string
+	var mongoDatabase *string
+	var mongoCollection *string
 	var mosquittoPid *int
 	var pskFilePath *string
 	var basicAuthLogin *string
@@ -40,6 +42,9 @@ func NewManagerService() ManagerService {
 	var acl *bool
 	var aclFile *string
 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	mongoUri = flag.String("mongoUri", "", "MongoDB Uri if empty Kubernetes CRDs are used")
+	mongoDatabase = flag.String("mongoDatabase", "mosquittoManager", "Mongo database used to store data, default mosquittoManager")
+	mongoCollection = flag.String("mongoCollection", "data", "Mongo collection used to store data, default data")
 	mosquittoPid = flag.Int("mosquittoPid", 0, "pid of mosquitto process")
 	pskFilePath = flag.String("pskFilePath", "", "path to pskfile")
 	basicAuthLogin = flag.String("basicAuthLogin", "", "basic auth login")
@@ -65,11 +70,23 @@ func NewManagerService() ManagerService {
 
 	log.Printf("Mosquitto pid - " + strconv.Itoa(*mosquittoPid))
 	log.Printf("Pskfile path - " + *pskFilePath)
-	var client = NewClientManager(kubeconfig)
+	var manager = createManager(kubeconfig, mongoUri, mongoDatabase, mongoCollection)
 	var config = NewConfig(*mosquittoPid, *pskFilePath, *basicAuthLogin, *basicAuthPass, *port, *crt, *key, *aclFile)
 	service.config = config
-	service.client = client
+	service.manager = manager
 	return service
+}
+
+func createManager(kubeconfig *string, mongoUri *string, mongoDatabase *string, mongoCollection *string) Manager {
+	if *mongoUri == "" {
+		return NewK8sManager(kubeconfig)
+	} else {
+		return NewMongoManager(MongoConfig{
+			Uri:        *mongoUri,
+			Database:   *mongoDatabase,
+			Collection: *mongoCollection,
+		})
+	}
 }
 
 func tryFindMosquittoPidByName() *int {
@@ -108,13 +125,16 @@ func (service *ManagerService) add(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf("Adding Login=" + lp.Login + " Password=" + lp.Password)
-		err = service.client.createMosquittoCred(lp)
+		err = service.manager.Create(lp)
 		if err != nil {
 			log.Printf("Error during adding")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		log.Printf("Added Login=" + lp.Login + " Password=" + lp.Password)
+		if !service.manager.IsObserveSupported() {
+			service.reloadAfterChange()
+		}
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -135,10 +155,14 @@ func (service *ManagerService) remove(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf("Removing Login=" + login.Login)
-		err = service.client.removeCRD(login)
+		err = service.manager.Remove(login)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		log.Printf("Removed Login=" + login.Login)
+		if !service.manager.IsObserveSupported() {
+			service.reloadAfterChange()
 		}
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -152,7 +176,7 @@ func (service *ManagerService) list(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		crds := service.client.getMosquittoCreds()
+		crds := service.manager.GetAll()
 		js, err := json.Marshal(crds)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -168,14 +192,14 @@ func (service *ManagerService) list(w http.ResponseWriter, r *http.Request) {
 
 func (service *ManagerService) reloadAfterChange() {
 	log.Printf("Trying to prepare PSK file")
-	err := preparePskFile(service.client, &service.config)
+	err := preparePskFile(service.manager, &service.config)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("PSK file prepared")
 	if service.config.aclFile != "" {
 		log.Printf("Trying to prepare ACL file")
-		err = prepareAclFile(service.client, &service.config)
+		err = prepareAclFile(service.manager, &service.config)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -194,7 +218,7 @@ func StartServer() {
 	mux.HandleFunc("/remove", service.remove)
 	mux.HandleFunc("/list", service.list)
 
-	go watchAndSyncCredsWithPskFile(&service)
+	go watchAndSyncCredsWithPskFile(service)
 
 	if service.config.isTLS() {
 		log.Printf("Starting mosquitto-manager TLS server on port " + service.config.port)
@@ -208,14 +232,10 @@ func StartServer() {
 
 }
 
-func watchAndSyncCredsWithPskFile(service *ManagerService) {
-	watch, err := service.client.client.MosquittoCreds("default").Watch(v1.ListOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	for range watch.ResultChan() {
-		log.Printf("Received event from K8s watcher")
+func watchAndSyncCredsWithPskFile(service ManagerService) {
+	if service.manager.IsObserveSupported() {
+		service.manager.ObserveIfSupported(service)
+	} else {
 		service.reloadAfterChange()
 	}
-
 }

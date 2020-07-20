@@ -3,15 +3,15 @@ package v1alpha1
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 type Acl struct {
-	AclType    string `json:"aclType"`
-	AccessType string `json:"accessType"`
-	Topic      string `json:"topic"`
+	AclType    string `json:"aclType" bson:"aclType"`
+	AccessType string `json:"accessType" bson:"accessType"`
+	Topic      string `json:"topic" bson:"topic"`
 }
 
 type MosquittoCredSpec struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-	Acls     []Acl  `json:"acls"`
+	Login    string `json:"login" bson:"login"`
+	Password string `json:"password" bson:"password"`
+	Acls     []Acl  `json:"acls" bson:"acls"`
 }
 
 type MosquittoCred struct {

@@ -19,8 +19,8 @@ func reloadConfig(config *Config) {
 	}
 }
 
-func preparePskFile(client *ClientManager, config *Config) error {
-	creds := client.getMosquittoCreds()
+func preparePskFile(client Manager, config *Config) error {
+	creds := client.GetAll()
 	pskfile, err := os.OpenFile(config.pskFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Fatal(err)
@@ -39,8 +39,8 @@ func preparePskFile(client *ClientManager, config *Config) error {
 	return w.Flush()
 }
 
-func prepareAclFile(client *ClientManager, config *Config) error {
-	creds := client.getMosquittoCreds()
+func prepareAclFile(client Manager, config *Config) error {
+	creds := client.GetAll()
 	aclfile, err := os.OpenFile(config.aclFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Fatal(err)

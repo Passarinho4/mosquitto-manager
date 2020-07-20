@@ -1,0 +1,15 @@
+acl: true
+
+initCreds:
+  - login: szymek
+    password: szymek
+    acls:
+      - aclType: "topic"
+        accessType: "readwrite"
+        topic: "#"
+  - login: szymek2
+    password: szymek2
+    acls:
+      - aclType: "topic"
+        accessType: "readwrite"
+        topic: "testTopic"
