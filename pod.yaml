@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: mosquitto-manager
+  labels:
+    name: mosquitto-manager
 spec:
   shareProcessNamespace: true
   containers:
@@ -11,7 +13,7 @@ spec:
     - name: mosquitto-manager
       image: passarinho/mosquitto-manager
       imagePullPolicy: Always
-      args: ["-acl=true"]
+      args: ["-acl=true", "--mongoUri=mongodb://10.50.129.177:27017/"]
       securityContext:
         capabilities:
           add:

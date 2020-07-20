@@ -36,6 +36,8 @@ func preparePskFile(client Manager, config *Config) error {
 		}
 	}
 
+	log.Printf("Write %d lines to pskfile", len(creds))
+
 	return w.Flush()
 }
 
