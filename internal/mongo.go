@@ -31,7 +31,7 @@ func NewMongoManager(config MongoConfig) MongoManager {
 	clientOptions := options.Client().ApplyURI(config.Uri)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		log.Fatal("Error during creating MongoManager", err)
+		log.Fatal("Error during creating MongoManager ", err)
 	}
 	manager.client = client
 
@@ -40,7 +40,7 @@ func NewMongoManager(config MongoConfig) MongoManager {
 	defer cancel()
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		log.Fatal("Cannot connect to MongoDB", err)
+		log.Fatal("Cannot connect to MongoDB ", err)
 	}
 	return manager
 }
@@ -51,7 +51,7 @@ func (manager MongoManager) Create(lp LoginPasswordAcls) error {
 	defer cancel()
 	_, err := collection.InsertOne(ctx, lp)
 	if err != nil {
-		log.Print("Cannot insert acl to MongoDB", err)
+		log.Print("Cannot insert acl to MongoDB ", err)
 	}
 	return err
 }

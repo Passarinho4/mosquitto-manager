@@ -28,19 +28,10 @@ type ManagerService struct {
 
 func NewManagerService() ManagerService {
 	var service = ManagerService{}
-	var kubeconfig *string
-	var mongoUri *string
-	var mongoDatabase *string
-	var mongoCollection *string
+	var kubeconfig, mongoUri, mongoDatabase, mongoCollection,
+		pskFilePath, basicAuthLogin, basicAuthPass, port, crt, key, aclFile *string
 	var mosquittoPid *int
-	var pskFilePath *string
-	var basicAuthLogin *string
-	var basicAuthPass *string
-	var port *string
-	var crt *string
-	var key *string
 	var acl *bool
-	var aclFile *string
 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	mongoUri = flag.String("mongoUri", "", "MongoDB Uri if empty Kubernetes CRDs are used")
 	mongoDatabase = flag.String("mongoDatabase", "mosquittoManager", "Mongo database used to store data, default mosquittoManager")
