@@ -26,6 +26,10 @@ if basic auth is not set endpoints are not secured.
 Parameters marked as "just for development" have their default values configured for K8s deployment which is recommended 
 in `/yamls/` examples. You can override them during development process to run mosquitto-manager locally.  
 
+In `/yamls/pod.yaml` you can find two not obvious options: 
+`shareProcessNamespace: true` and `SYS_PTRACE`. These options are required to allow mosquitto manager application 
+(launched in different container than mosquitto process) edit the pskfile and send the reload config signal. 
+The exact details about how it works - `managerServer.go`. 
 
 Helpful commands:
 Subscribe on topic news using mosquitto console client:
