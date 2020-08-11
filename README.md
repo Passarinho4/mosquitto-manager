@@ -49,9 +49,13 @@ Http request to list mosquitto users.
 
 `curl --location --request GET 'localhost:8080/list'`
 
+Http request to get mosquitto user by ID (returned by add enpoint).
+
+`curl --location --request GET 'localhost:8080/getById/5f32aa5de6e99db14a4a2b35'`
+
 Http request to remove mosquitto user.
 
-`curl --location --request POST 'localhost:8080/remove' --header 'Content-Type: application/json' --data-raw '{"login":"szymek2"}'`
+`curl --location --request DELETE 'localhost:8080/remove' --header 'Content-Type: application/json' --data-raw '{"id":"5f32aa5de6e99db14a4a2b35"}'`
 
 To enable ACL you need to build mosquitto image (from mosquitto directory) 
 with acl_file `/etc/mosquitto/acl.conf` option in `mosquitto.conf` and
