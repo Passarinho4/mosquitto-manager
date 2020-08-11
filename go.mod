@@ -7,4 +7,5 @@ require (
 	go.mongodb.org/mongo-driver v1.3.5
 	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v0.17.0
+	github.com/google/uuid v1.1.1
 )

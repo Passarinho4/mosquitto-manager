@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"errors"
+	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,8 +33,8 @@ func NewK8sManager(kubeconfig *string) Manager {
 	return result
 }
 
-func (client K8sManager) Remove(login Login) error {
-	err := client.client.MosquittoCreds("default").Delete(login.Login, metav1.DeleteOptions{})
+func (client K8sManager) Remove(id Id) error {
+	err := client.client.MosquittoCreds("default").Delete(id.Id, metav1.DeleteOptions{})
 	return err
 }
 
@@ -49,22 +51,43 @@ func (client K8sManager) GetAll() []LoginPasswordAcls {
 	return result
 }
 
-func (client K8sManager) Create(lp LoginPasswordAcls) error {
+func (client K8sManager) Get(id Id) (*LoginPasswordAcls, error) {
+	creds, _ := client.client.MosquittoCreds("default").Get(id.Id, metav1.GetOptions{})
+	var result = LoginPasswordAcls{
+		Login:    creds.Spec.Login,
+		Password: creds.Spec.Password,
+		Acls:     creds.Spec.Acls,
+	}
+	return &result, nil
+}
+
+func (client K8sManager) Update(id Id, lp LoginPasswordAcls) error {
+	return errors.New("update is not supported with CRD storage")
+}
+
+func (client K8sManager) Create(lp LoginPasswordAcls) (*string, error) {
+	id := uuid.New().String()
 	creds := v1alpha12.MosquittoCred{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "MosquittoCred",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: lp.Login,
+			Name: id,
 		},
 		Spec: v1alpha12.MosquittoCredSpec{
+			Id:       id,
 			Login:    lp.Login,
 			Password: lp.Password,
 			Acls:     lp.Acls,
 		},
 	}
 	_, err := client.client.MosquittoCreds("default").Create(&creds)
-	return err
+	if err != nil {
+		log.Print("Error during CRD creation ", err)
+		return nil, err
+	} else {
+		return &id, nil
+	}
 }
 
 func createConfig(kubeconfig *string) *rest.Config {

@@ -5,10 +5,12 @@ import (
 	"errors"
 	"flag"
 	"github.com/mitchellh/go-ps"
+	"io"
 	"log"
 	"mosquitto-manager/internal/api/types/v1alpha1"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type LoginPasswordAcls struct {
@@ -17,8 +19,8 @@ type LoginPasswordAcls struct {
 	Acls     []v1alpha1.Acl
 }
 
-type Login struct {
-	Login string
+type Id struct {
+	Id string
 }
 
 type ManagerService struct {
@@ -116,15 +118,19 @@ func (service *ManagerService) add(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf("Adding Login=" + lp.Login + " Password=" + lp.Password)
-		err = service.manager.Create(lp)
+		id, err := service.manager.Create(lp)
 		if err != nil {
 			log.Printf("Error during adding")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("Added Login=" + lp.Login + " Password=" + lp.Password)
+		log.Printf("Added Login=" + lp.Login + " Password=" + lp.Password + " ID=" + *id)
 		if !service.manager.IsObserveSupported() {
 			service.reloadAfterChange()
+		}
+		_, err = io.WriteString(w, *id)
+		if err != nil {
+			log.Print("Error during writing the response.", err)
 		}
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -133,25 +139,25 @@ func (service *ManagerService) add(w http.ResponseWriter, r *http.Request) {
 }
 
 func (service *ManagerService) remove(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+	if r.Method == "DELETE" {
 		err := service.checkAuth(w, r)
 		if err != nil {
 			return
 		}
-		var login Login
-		err = json.NewDecoder(r.Body).Decode(&login)
+		var id Id
+		err = json.NewDecoder(r.Body).Decode(&id)
 		if err != nil {
 			log.Printf("Error during removing")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		log.Printf("Removing Login=" + login.Login)
-		err = service.manager.Remove(login)
+		log.Printf("Removing Id=" + id.Id)
+		err = service.manager.Remove(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("Removed Login=" + login.Login)
+		log.Printf("Removed Id=" + id.Id)
 		if !service.manager.IsObserveSupported() {
 			service.reloadAfterChange()
 		}
@@ -178,6 +184,56 @@ func (service *ManagerService) list(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
+	}
+}
+
+func (service *ManagerService) getById(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		err := service.checkAuth(w, r)
+		if err != nil {
+			return
+		}
+		id := strings.Trim(r.URL.Path, "/getById/")
+		creds, err := service.manager.Get(Id{Id: id})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		js, err := json.Marshal(*creds)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(js)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (service *ManagerService) update(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "PUT" {
+		err := service.checkAuth(w, r)
+		if err != nil {
+			return
+		}
+		var lp LoginPasswordAcls
+		err = json.NewDecoder(r.Body).Decode(&lp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		id := strings.Trim(r.URL.Path, "/update/")
+		log.Print("Updating " + id + " Login=" + lp.Login + " Password=" + lp.Password)
+		err = service.manager.Update(Id{Id: id}, lp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		log.Print("Updated " + id + " Login=" + lp.Login + " Password=" + lp.Password)
+		if !service.manager.IsObserveSupported() {
+			service.reloadAfterChange()
+		}
 	}
 }
 
@@ -208,6 +264,8 @@ func StartServer() {
 	mux.HandleFunc("/add", service.add)
 	mux.HandleFunc("/remove", service.remove)
 	mux.HandleFunc("/list", service.list)
+	mux.HandleFunc("/getById/", service.getById)
+	mux.HandleFunc("/update/", service.update)
 
 	go watchAndSyncCredsWithPskFile(service)
 
