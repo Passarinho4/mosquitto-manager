@@ -13,7 +13,7 @@ spec:
     - name: mosquitto-manager
       image: passarinho/mosquitto-manager
       imagePullPolicy: Always
-      args: ["-acl=true", "--mongoUri=mongodb://10.50.129.177:27017/"]
+      args: ["-acl=false", "--mongoUri=mongodb://10.50.129.177:27017/"]
       securityContext:
         capabilities:
           add:

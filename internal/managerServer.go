@@ -13,7 +13,14 @@ import (
 	"strings"
 )
 
-type LoginPasswordAcls struct {
+type CredsWithId struct {
+	Id       string `json:"Id" bson:"_id"`
+	Login    string
+	Password string
+	Acls     []v1alpha1.Acl
+}
+
+type Creds struct {
 	Login    string
 	Password string
 	Acls     []v1alpha1.Acl
@@ -111,7 +118,7 @@ func (service *ManagerService) add(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		var lp LoginPasswordAcls
+		var lp Creds
 		err = json.NewDecoder(r.Body).Decode(&lp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -218,7 +225,7 @@ func (service *ManagerService) update(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		var lp LoginPasswordAcls
+		var lp Creds
 		err = json.NewDecoder(r.Body).Decode(&lp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

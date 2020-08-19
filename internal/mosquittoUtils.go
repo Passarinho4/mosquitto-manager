@@ -5,18 +5,17 @@ import (
 	"encoding/hex"
 	"log"
 	"os"
-	"syscall"
 )
 
 func reloadConfig(config *Config) {
-	process, err := os.FindProcess(config.mosquittoPid)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = process.Signal(syscall.SIGHUP)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//process, err := os.FindProcess(config.mosquittoPid)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//err = process.Signal(syscall.SIGHUP)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 }
 
 func preparePskFile(client Manager, config *Config) error {

@@ -1,11 +1,11 @@
 package internal
 
 type Manager interface {
-	Create(lp LoginPasswordAcls) (*string, error)
+	Create(creds Creds) (*string, error)
 	Remove(id Id) error
-	Get(id Id) (*LoginPasswordAcls, error)
-	GetAll() []LoginPasswordAcls
+	Get(id Id) (*CredsWithId, error)
+	GetAll() []CredsWithId
 	ObserveIfSupported(service ManagerService)
 	IsObserveSupported() bool
-	Update(id Id, lp LoginPasswordAcls) error
+	Update(id Id, creds Creds) error
 }

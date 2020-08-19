@@ -46,7 +46,7 @@ func NewMongoManager(config MongoConfig) MongoManager {
 	return manager
 }
 
-func (manager MongoManager) Create(lp LoginPasswordAcls) (*string, error) {
+func (manager MongoManager) Create(lp Creds) (*string, error) {
 	collection := manager.getCollection()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -72,8 +72,8 @@ func (manager MongoManager) Remove(id Id) error {
 	return err
 }
 
-func (manager MongoManager) GetAll() []LoginPasswordAcls {
-	var data []LoginPasswordAcls
+func (manager MongoManager) GetAll() []CredsWithId {
+	var data []CredsWithId
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cursor, err := manager.getCollection().Find(ctx, bson.M{})
@@ -86,8 +86,8 @@ func (manager MongoManager) GetAll() []LoginPasswordAcls {
 	return data
 }
 
-func (manager MongoManager) Get(id Id) (*LoginPasswordAcls, error) {
-	var data LoginPasswordAcls
+func (manager MongoManager) Get(id Id) (*CredsWithId, error) {
+	var data CredsWithId
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	objectId, _ := primitive.ObjectIDFromHex(id.Id)
@@ -105,11 +105,12 @@ func (manager MongoManager) Get(id Id) (*LoginPasswordAcls, error) {
 	}
 }
 
-func (manager MongoManager) Update(id Id, lp LoginPasswordAcls) error {
+func (manager MongoManager) Update(id Id, lp Creds) error {
 	collection := manager.getCollection()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	objectId, _ := primitive.ObjectIDFromHex(id.Id)
+
 	res := collection.FindOneAndReplace(ctx, bson.M{"_id": objectId}, lp)
 	if res.Err() != nil {
 		log.Print("Cannot update creds to MongoDB ", res.Err())
