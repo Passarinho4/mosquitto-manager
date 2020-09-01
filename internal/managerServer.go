@@ -200,7 +200,8 @@ func (service *ManagerService) getById(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		id := strings.Trim(r.URL.Path, "/getById/")
+		id := strings.TrimPrefix(r.URL.Path, "/getById/")
+		log.Println("Trying to get creds by Id=" + id + " and path is " + r.URL.Path)
 		creds, err := service.manager.Get(Id{Id: id})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
