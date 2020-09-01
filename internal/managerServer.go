@@ -271,11 +271,6 @@ func (service *ManagerService) credsIdHandler(w http.ResponseWriter, r *http.Req
 func StartServer() {
 	mux := http.NewServeMux()
 	service := NewManagerService()
-	//mux.HandleFunc("/add", service.add)
-	//mux.HandleFunc("/remove", service.remove)
-	//mux.HandleFunc("/list", service.list)
-	//mux.HandleFunc("/getById/", service.getById)
-	//mux.HandleFunc("/update/", service.update)
 	mux.HandleFunc("/creds", service.credsHandler)
 	mux.HandleFunc("/creds/", service.credsIdHandler)
 
