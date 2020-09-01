@@ -113,85 +113,65 @@ func (service *ManagerService) checkAuth(w http.ResponseWriter, r *http.Request)
 }
 
 func (service *ManagerService) add(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		err := service.checkAuth(w, r)
-		if err != nil {
-			return
-		}
-		var lp Creds
-		err = json.NewDecoder(r.Body).Decode(&lp)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		log.Printf("Adding Login=" + lp.Login + " Password=" + lp.Password)
-		id, err := service.manager.Create(lp)
-		if err != nil {
-			log.Printf("Error during adding")
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		log.Printf("Added Login=" + lp.Login + " Password=" + lp.Password + " ID=" + *id)
-		if !service.manager.IsObserveSupported() {
-			service.reloadAfterChange()
-		}
-		_, err = io.WriteString(w, *id)
-		if err != nil {
-			log.Print("Error during writing the response.", err)
-		}
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	err := service.checkAuth(w, r)
+	if err != nil {
 		return
 	}
+	var lp Creds
+	err = json.NewDecoder(r.Body).Decode(&lp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	log.Printf("Adding Login=" + lp.Login + " Password=" + lp.Password)
+	id, err := service.manager.Create(lp)
+	if err != nil {
+		log.Printf("Error during adding")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Printf("Added Login=" + lp.Login + " Password=" + lp.Password + " ID=" + *id)
+	if !service.manager.IsObserveSupported() {
+		service.reloadAfterChange()
+	}
+	_, err = io.WriteString(w, *id)
+	if err != nil {
+		log.Print("Error during writing the response.", err)
+	}
+
 }
 
 func (service *ManagerService) remove(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "DELETE" {
-		err := service.checkAuth(w, r)
-		if err != nil {
-			return
-		}
-		var id Id
-		err = json.NewDecoder(r.Body).Decode(&id)
-		if err != nil {
-			log.Printf("Error during removing")
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		log.Printf("Removing Id=" + id.Id)
-		err = service.manager.Remove(id)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		log.Printf("Removed Id=" + id.Id)
-		if !service.manager.IsObserveSupported() {
-			service.reloadAfterChange()
-		}
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	err := service.checkAuth(w, r)
+	if err != nil {
 		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/creds/")
+	log.Printf("Removing Id=" + id)
+	err = service.manager.Remove(Id{id})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Printf("Removed Id=" + id)
+	if !service.manager.IsObserveSupported() {
+		service.reloadAfterChange()
 	}
 }
 
 func (service *ManagerService) list(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		err := service.checkAuth(w, r)
-		if err != nil {
-			return
-		}
-		crds := service.manager.GetAll()
-		js, err := json.Marshal(crds)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(js)
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	err := service.checkAuth(w, r)
+	if err != nil {
 		return
 	}
+	crds := service.manager.GetAll()
+	js, err := json.Marshal(crds)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(js)
 }
 
 func (service *ManagerService) getById(w http.ResponseWriter, r *http.Request) {
@@ -200,7 +180,7 @@ func (service *ManagerService) getById(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		id := strings.TrimPrefix(r.URL.Path, "/getById/")
+		id := strings.TrimPrefix(r.URL.Path, "/creds/")
 		log.Println("Trying to get creds by Id=" + id + " and path is " + r.URL.Path)
 		creds, err := service.manager.Get(Id{Id: id})
 		if err != nil {
@@ -221,27 +201,25 @@ func (service *ManagerService) getById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (service *ManagerService) update(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "PUT" {
-		err := service.checkAuth(w, r)
-		if err != nil {
-			return
-		}
-		var lp Creds
-		err = json.NewDecoder(r.Body).Decode(&lp)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		id := strings.Trim(r.URL.Path, "/update/")
-		log.Print("Updating " + id + " Login=" + lp.Login + " Password=" + lp.Password)
-		err = service.manager.Update(Id{Id: id}, lp)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		log.Print("Updated " + id + " Login=" + lp.Login + " Password=" + lp.Password)
-		if !service.manager.IsObserveSupported() {
-			service.reloadAfterChange()
-		}
+	err := service.checkAuth(w, r)
+	if err != nil {
+		return
+	}
+	var lp Creds
+	err = json.NewDecoder(r.Body).Decode(&lp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/creds/")
+	log.Print("Updating " + id + " Login=" + lp.Login + " Password=" + lp.Password)
+	err = service.manager.Update(Id{Id: id}, lp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	log.Print("Updated " + id + " Login=" + lp.Login + " Password=" + lp.Password)
+	if !service.manager.IsObserveSupported() {
+		service.reloadAfterChange()
 	}
 }
 
@@ -266,14 +244,40 @@ func (service *ManagerService) reloadAfterChange() {
 	log.Printf("Mosquitto config reloaded.")
 }
 
+func (service *ManagerService) credsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		service.list(w, r)
+	case "POST":
+		service.add(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (service *ManagerService) credsIdHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "PUT":
+		service.update(w, r)
+	case "DELETE":
+		service.remove(w, r)
+	case "GET":
+		service.getById(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 func StartServer() {
 	mux := http.NewServeMux()
 	service := NewManagerService()
-	mux.HandleFunc("/add", service.add)
-	mux.HandleFunc("/remove", service.remove)
-	mux.HandleFunc("/list", service.list)
-	mux.HandleFunc("/getById/", service.getById)
-	mux.HandleFunc("/update/", service.update)
+	//mux.HandleFunc("/add", service.add)
+	//mux.HandleFunc("/remove", service.remove)
+	//mux.HandleFunc("/list", service.list)
+	//mux.HandleFunc("/getById/", service.getById)
+	//mux.HandleFunc("/update/", service.update)
+	mux.HandleFunc("/creds", service.credsHandler)
+	mux.HandleFunc("/creds/", service.credsIdHandler)
 
 	go watchAndSyncCredsWithPskFile(service)
 
