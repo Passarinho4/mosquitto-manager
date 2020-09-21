@@ -60,8 +60,7 @@ Http request to get mosquitto user by ID (returned by add enpoint).
 
 Http request to remove mosquitto user.
 
-`curl --location --request DELETE 'localhost:8080/creds/5f4e48c7e184b1045c373c30' \
- --data-raw ''`
+`curl --location --request DELETE 'localhost:8080/creds/5f4e48c7e184b1045c373c30'`
 
 To enable ACL you need to build mosquitto image (from mosquitto directory) 
 with acl_file `/etc/mosquitto/acl.conf` option in `mosquitto.conf` and

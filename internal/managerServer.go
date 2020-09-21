@@ -175,29 +175,24 @@ func (service *ManagerService) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (service *ManagerService) getById(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		err := service.checkAuth(w, r)
-		if err != nil {
-			return
-		}
-		id := strings.TrimPrefix(r.URL.Path, "/creds/")
-		log.Println("Trying to get creds by Id=" + id + " and path is " + r.URL.Path)
-		creds, err := service.manager.Get(Id{Id: id})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		js, err := json.Marshal(*creds)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(js)
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	err := service.checkAuth(w, r)
+	if err != nil {
 		return
 	}
+	id := strings.TrimPrefix(r.URL.Path, "/creds/")
+	log.Println("Trying to get creds by Id=" + id + " and path is " + r.URL.Path)
+	creds, err := service.manager.Get(Id{Id: id})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	js, err := json.Marshal(*creds)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(js)
 }
 
 func (service *ManagerService) update(w http.ResponseWriter, r *http.Request) {
