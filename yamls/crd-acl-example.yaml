@@ -3,6 +3,7 @@ kind: "MosquittoCred"
 metadata:
   name: "mosquitto-cred-example"
 spec:
+  id: "asjdnaksdnaljsnd"
   login: "szymek"
   password: "szymek"
   acls:

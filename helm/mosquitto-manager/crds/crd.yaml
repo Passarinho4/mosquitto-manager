@@ -15,8 +15,10 @@ spec:
        required: ["spec"]
        properties:
          spec:
-           required: ["login", "password"]
+           required: ["id", "login", "password"]
            properties:
+             id:
+               type: "string"
              login:
                type: "string"
              password:

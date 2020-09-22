@@ -43,17 +43,31 @@ Publish on topic news using mosquitto console client with auth.
 
 Http request to create new mosquitto user. 
 
-`curl --request POST http://localhost:8080/add --data-raw '{login:szymek2 | password:szymek2 | acls:[{aclType:topic | accessType:readwrite | topic:topic2}]}'`
+`curl --location --request POST 'http://localhost:8080/creds' \
+ --header 'Content-Type: application/json' \
+ --data-raw '{
+     "Login": "login-test",
+     "Password": "password-test"
+ }'`
 
 Http request to list mosquitto users.
 
-`curl --location --request GET 'localhost:8080/list'`
+`curl --location --request GET 'localhost:8080/creds'`
+
+Http request to get mosquitto user by ID (returned by add enpoint).
+
+`curl --location --request GET 'http://localhost:8080/creds/5f4e48c7e184b1045c373c30'`
 
 Http request to remove mosquitto user.
 
-`curl --location --request POST 'localhost:8080/remove' --header 'Content-Type: application/json' --data-raw '{"login":"szymek2"}'`
+`curl --location --request DELETE 'localhost:8080/creds/5f4e48c7e184b1045c373c30'`
 
 To enable ACL you need to build mosquitto image (from mosquitto directory) 
 with acl_file `/etc/mosquitto/acl.conf` option in `mosquitto.conf` and
 pass `acl=true` to mosquitto manager. 
+
+API documentation is available here:
+https://documenter.getpostman.com/view/109540/TVCe29My
+
+Postman tests are in tests directory. 
 

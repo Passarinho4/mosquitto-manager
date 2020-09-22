@@ -1,0 +1,312 @@
+{
+	"info": {
+		"_postman_id": "445abef4-45be-4478-a6e7-b669c64259d8",
+		"name": "mosquitto-manager-api-tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "add-creds",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "285bf68c-6c4a-435d-af99-c19b9834c87c",
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})",
+							"pm.test(\"Response body is ID\", function() {",
+							"    var test1 = responseBody.length > 0;",
+							"    pm.expect(test1).to.be.true",
+							"})",
+							"pm.collectionVariables.set(\"credsId\", responseBody);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Login\": \"login-test\",\n    \"Password\": \"password-test\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/creds",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"creds"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-creds",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "b27d03c2-6cf9-47d8-a71b-ffdaf480035c",
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})",
+							"",
+							"pm.test(\"Response body is ok\", function() {",
+							"    var responseJson = JSON.parse(responseBody);",
+							"    var test1 = responseJson.Id == pm.collectionVariables.get(\"credsId\");",
+							"    pm.expect(test1).to.be.true",
+							"    var test2 = responseJson.Login == \"login-test\";",
+							"    pm.expect(test2).to.be.true",
+							"    var test3 = responseJson.Password == \"password-test\";",
+							"    pm.expect(test3).to.be.true",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/creds/{{credsId}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"creds",
+						"{{credsId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "list-creds",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "4a4bbfba-d376-47dd-b4e7-a3399042dcc8",
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})",
+							"",
+							"pm.test(\"Response body is ok\", function() {",
+							"    var responseJson = JSON.parse(responseBody);",
+							"    var test1 = responseJson[responseJson.length -1].Id == pm.collectionVariables.get(\"credsId\");",
+							"    pm.expect(test1).to.be.true",
+							"    var test2 = responseJson[responseJson.length -1].Login == \"login-test\";",
+							"    pm.expect(test2).to.be.true",
+							"    var test3 = responseJson[responseJson.length -1].Password == \"password-test\";",
+							"    pm.expect(test3).to.be.true",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/creds",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"creds"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update-creds",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "9ffca40a-a7ee-42bd-8d3d-f40bec06636c",
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Login\": \"login-test2\",\n    \"Password\": \"password-test2\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/creds/{{credsId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"creds",
+						"{{credsId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-creds-2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "7644c1aa-54b3-4e83-bc2b-9db7cb484c44",
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})",
+							"",
+							"pm.test(\"Response body is ok\", function() {",
+							"    var responseJson = JSON.parse(responseBody);",
+							"    var test1 = responseJson.Id == pm.collectionVariables.get(\"credsId\");",
+							"    pm.expect(test1).to.be.true",
+							"    var test2 = responseJson.Login == \"login-test2\";",
+							"    pm.expect(test2).to.be.true",
+							"    var test3 = responseJson.Password == \"password-test2\";",
+							"    pm.expect(test3).to.be.true",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/creds/{{credsId}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"creds",
+						"{{credsId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "remove-creds",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "ac30522b-f9c8-4466-aab4-ea40c9a104ea",
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/creds/{{credsId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"creds",
+						"{{credsId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-creds",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "adfef1c3-db6c-4d75-b99e-bc163963ab73",
+						"exec": [
+							"pm.test(\"Status code is 404\", function() {",
+							"    pm.response.to.have.status(404);",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/creds/{{credsId}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"creds",
+						"{{credsId}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"id": "d91c823c-540c-4c95-bd26-46cd928c6646",
+			"key": "credsId",
+			"value": "5f4e48c7e184b1045c373c30"
+		}
+	],
+	"protocolProfileBehavior": {}
+}
