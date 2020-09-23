@@ -107,6 +107,7 @@ func (service *ManagerService) checkAuth(w http.ResponseWriter, r *http.Request)
 	if service.config.basicAuthHeader == "" || r.Header.Get("Authorization") == service.config.basicAuthHeader {
 		return nil
 	} else {
+		w.Header().Add("WWW-Authenticate", "Basic realm=\"mosquitto-manager\"")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return errors.New("unauthorized")
 	}
